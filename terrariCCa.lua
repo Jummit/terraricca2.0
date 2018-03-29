@@ -11,8 +11,8 @@ elements.tilemap = engine.elements.new.tilemap({
     stone = {texture = engine.elements.new.texture({{" ", "f", "8"}}), solid = true, behind = "wall"}
   }),
   init = function(self)
-    local width = engine.w*6
-    local height = engine.h*6
+    local width = engine.w*50
+    local height = engine.h*10
     local surfaceY = math.floor(height/2)
 
     local surfaceHeight = surfaceY
