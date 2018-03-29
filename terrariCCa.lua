@@ -6,15 +6,40 @@ elements.tilemap = engine.elements.new.tilemap({
   tileset = engine.elements.new.tileset({
     air = {texture = engine.elements.new.texture({{" ", "3", "3"}})},
     grass = {texture = engine.elements.new.texture({{" ", "7", "d"}}),solid = true, behind = "dirt"},
-    dirt = {texture = engine.elements.new.texture({{" ", "7", "c"}}), solid = true, behind = "wall"}
+    plant = {texture = engine.elements.new.texture({{"p", "d", "3"}})},
+    dirt = {texture = engine.elements.new.texture({{" ", "7", "c"}}), solid = true, behind = "wall"},
+    stone = {texture = engine.elements.new.texture({{" ", "f", "8"}}), solid = true, behind = "wall"}
   }),
   init = function(self)
-    local width = engine.w*3
-    local height = engine.h*3
+    local width = engine.w*6
+    local height = engine.h*6
     local surfaceY = math.floor(height/2)
+
+    local surfaceHeight = surfaceY
+    local stoneHeight = surfaceY+10
+    local move = 0
     self.set.rectangle(self, 1, 1, width, height, "air")
-    self.set.rectangle(self, 1, surfaceY, width, surfaceY, "dirt")
-    self.set.rectangle(self, 1, surfaceY, width, 1, "grass")
+    for x = 1, width do
+      if math.random(1, 10) == 1 then
+        local oldMove
+        if math.random(2) == 1 then
+          move = 1
+        else
+          move = -1
+        end
+      elseif math.random(1, 5) == 1 then
+        move = engine.math.reduce(move)
+      end
+      stoneHeight = stoneHeight + move+math.random(3)-2
+      surfaceHeight = surfaceHeight + move
+      if stoneHeight-surfaceHeight < 5 then stoneHeight = stoneHeight + 2 end
+      self.set.rectangle(self, x, surfaceHeight, 1, height-surfaceHeight, "dirt")
+      self.set.rectangle(self, x, stoneHeight, 1, height-stoneHeight, "stone")
+      self.set.tile(self, x, surfaceHeight, "grass")
+      if math.random(1, 10+move) == 1 then
+        self.set.tile(self, x, surfaceHeight-1, "plant")
+      end
+    end
   end
 })
 elements.player = engine.elements.new.kinematic({
@@ -45,8 +70,6 @@ elements.player = engine.elements.new.kinematic({
       end
     end
   end,
-  init = function(self)
-  end,
   update = function(self)
     local offX, offY = engine.math.getOffset(engine.w, self.x), engine.math.getOffset(engine.h, self.y)
     self.offX, self.offY = offX, offY
@@ -58,4 +81,4 @@ elements.player = engine.elements.new.kinematic({
 })
 
 
-engine.run(elements, 0.01)
+engine.run(elements, 0.001)
