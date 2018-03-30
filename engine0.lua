@@ -70,14 +70,9 @@ engine.math = {
         returnValue = returnValue + 1
       end
     end
-    return returnValue
   end,
   getOffset = function(w, pos)
     return math.floor(-pos+w/2)
-  end,
-  getDistance = function(x1, y1, x2, y2)
-    --error(x1.." "..x2.." "..y1.." "..y2.." "..math.sqrt((x1-x2)^2+(y2-y2)^2))
-    return math.sqrt((x1-x2)^2+(y1-y2)^2)
   end
 }
 
@@ -112,7 +107,7 @@ engine.elements.new = {
     end,
     UPDATE = function(self, event, var1, var2, var3)
     end,
-    DRAW = function(self)
+    DRAW = function(self, offX, offY)
     end
   }),
   texture = engine.elements.newElement({
@@ -131,9 +126,9 @@ engine.elements.new = {
     INIT = function(self)
       self.w, self.h = self:getDimensions()
     end,
-    DRAW = function(self)
+    DRAW = function(self, offX, offY)
       if self.x and self.y then
-        self:drawTexture(self.x, self.y)
+        self:drawTexture(self.x, self.y, offX, offY)
       end
     end,
     drawTexture = function(self, x, y, offX, offY)
@@ -178,31 +173,23 @@ engine.elements.new = {
         self.clicked = false
       end
     end,
-    DRAW = function(self)
+    DRAW = function(self, offX, offY)
       local color = self.color
       if self.clicked then
         color = self.clickedColor
       end
-      paintutils.drawFilledBox(self.x, self.y, self.x+self.w, self.y+self.h, color)
+      paintutils.drawFilledBox(self.x+offX, self.y+offY, self.x+self.w+offX-1, self.y+self.h+offY-1, color)
     end
   }),
   tileset = engine.elements.newElement({
   }),
   tilemap = engine.elements.newElement({
-    INIT = function(self)
-      self.w, self.h = 0, 0
-    end,
-    offX = 0,
-    offY = 0,
+    w = 0, h = 0,
     DRAW = function(self, offX, offY)
-      for x = 1, engine.w do
-        for y = 1, engine.h do
-          if self[x-offX] then
-            local tile = self.tileset[self[x-offX][y-offY]]
-            if tile then
-              tile.texture:drawTexture(x, y)
-            end
-          end
+      for x = 1, #self do
+        for y = 1, #self[x] do
+          local tile = self.tileset[self[x][y]]
+          tile.texture:drawTexture(x, y, offX, offY)
         end
       end
     end,
@@ -229,21 +216,12 @@ engine.elements.new = {
         end
         if not self[x] then self[x] = {} end
         self[x][y] = tileToSet
-        --self:updateDimensions()
+        self:updateDimensions()
       end,
       rectangle = function(self, x, y, w, h, tile)
         for x = x, x+w-1 do
           for y = y, y+h-1 do
             self.set.tile(self, x, y, tile)
-          end
-        end
-      end,
-      sphere = function(self, sx, sy, r, tile)
-        for x = sx-r*2, sx+r*2 do
-          for y = sy-r*2, sy+r*2 do
-            if engine.math.getDistance(x, y, sx, sy) <= r then
-              self.set.tile(self, x, y, tile)
-            end
           end
         end
       end
@@ -266,8 +244,8 @@ engine.elements.new = {
         self.jumping = false
       end
     end,
-    DRAW = function(self)
-      self.texture:drawTexture(self.x, self.y, self.offX, self.offY)
+    DRAW = function(self, offX, offY)
+      self.texture:drawTexture(self.x, self.y, offX, offY)
     end,
     PHYSICSUPDATE = function(self)
       for key, move in pairs(self.moves) do
@@ -286,37 +264,35 @@ engine.elements.new = {
         self.jumpedHeight = 0
       end
     end
-  })
+  }),
+  viewport = engine.elements.newElement({
+    offX = 0,
+    offY = 0,
+    elements = {},
+    UPDATE = function(self, event, var1, var2, var3)
+      for elementNum = 1, #self.elements do
+        local element = self.elements[elementNum]
+        element.offX, element.offY = self.offX, self.offY
+      end
+    end,
+    set = function(self)
+      self.offX = engine.math.getOffset(engine.w, self.middleX)
+      self.offY = engine.math.getOffset(engine.h, self.middleY)
+    end
+  }),
 }
-engine.elements.new.inventory = engine.elements.newElement({
-  INIT = function(self)
-    for slotNum = 1, self.slotNum do
-      self[slotNum] = {}
-    end
-  end,
-  UPDATE = function(self, event, var1, var2, var3)
-  end,
-  textures = {
-    up = engine.elements.new.texture({{"\143", "a", "0"}}),
-    left = engine.elements.new.texture({{"\149", "a", "0"}}),
-    right = engine.elements.new.texture({{"\149", "0", "a"}}),
-    down = engine.elements.new.texture({{"\131", "0", "a"}})
-  },
-  drawSlot = function(self, slotNum)
-    local slotX, slotY = self.x+(slotNum-1)*3, self.y
-    self.textures.up:drawTexture(slotX, slotY-1)
-    self.textures.down:drawTexture(slotX, slotY+1)
-    self.textures.left:drawTexture(slotX-1, slotY)
-    self.textures.right:drawTexture(slotX+1, slotY)
-  end,
-  DRAW = function(self)
-    for slotNum = 1, #self do
-      self:drawSlot(slotNum)
-    end
-  end
-})
 
 engine.elements.runFunction = function(elements, func, ...)
+  local args = {...}
+  if type(func) == "string" then
+    funct = function(element)
+      if element[func] then
+        element[func](element, table.unpack(args))
+      end
+    end
+  else
+    funct = func
+  end
   local prioritys = {}
   for elementName, element in pairs(elements) do
     local priority = element.priority
@@ -328,17 +304,17 @@ engine.elements.runFunction = function(elements, func, ...)
       end
     end
     if element.element then
-      if element[func] then
-        element[func](element, ...)
-      end
+      funct(element, ...)
     else
-      engine.elements.runFunction(element, func, ...)
+      engine.elements.runFunction(element, funct, ...)
     end
   end
   for priorityNum = 1, #prioritys do
     local element = prioritys[priorityNum]
-    if element[func] then
-      element[func](element, ...)
+    if element.element then
+      funct(element, ...)
+    else
+      engine.elements.runFunction(element, funct, ...)
     end
   end
 end
@@ -356,8 +332,15 @@ engine.elements.physicsUpdate = function(elements)
   engine.elements.runFunction(elements, "physicsUpdate")
 end
 engine.elements.draw = function(elements)
-  engine.elements.runFunction(elements, "DRAW")
-  engine.elements.runFunction(elements, "draw")
+  engine.elements.runFunction(elements, function(element)
+    local offX, offY = element.offX or 0, element.offY or 0
+    if element.DRAW then
+      element:DRAW(offX, offY)
+    end
+    if element.draw then
+      element:draw(offX, offY)
+    end
+  end)
 end
 
 engine.run = function(elements, dt)
@@ -378,13 +361,13 @@ engine.run = function(elements, dt)
     buffer.setVisible(true)
 
     local event, var1, var2, var3 = os.pullEventRaw()
-    if engine.eventHandler[event] then
-      engine.eventHandler[event](var1, var2, var3)
-    end
     if event == "timer" then
       engine.elements.physicsUpdate(elements)
       os.cancelTimer(physicsUpdateTimer)
-      physicsUpdateTimer = os.startTimer(0.1)
+      physicsUpdateTimer = os.startTimer(1)
+    end
+    if engine.eventHandler[event] then
+      engine.eventHandler[event](var1, var2, var3)
     end
     if event == "char" and var1 == "q" then gameRunning = false end
     engine.elements.update(elements, event, var1, var2, var3)
