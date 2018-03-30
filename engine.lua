@@ -70,9 +70,14 @@ engine.math = {
         returnValue = returnValue + 1
       end
     end
+    return returnValue
   end,
   getOffset = function(w, pos)
     return math.floor(-pos+w/2)
+  end,
+  getDistance = function(x1, y1, x2, y2)
+    --error(x1.." "..x2.." "..y1.." "..y2.." "..math.sqrt((x1-x2)^2+(y2-y2)^2))
+    return math.sqrt((x1-x2)^2+(y1-y2)^2)
   end
 }
 
@@ -190,10 +195,14 @@ engine.elements.new = {
     offset = {0, 0},
     DRAW = function(self)
       local offX, offY = self.offX or 0, self.offY or 0
-      for x = 1, #self do
-        for y = 1, #self[x] do
-          local tile = self.tileset[self[x][y]]
-          tile.texture:drawTexture(x, y, offX, offY)
+      for x = 1, engine.w do
+        for y = 1, engine.h do
+          if self[x-offX] then
+            local tile = self.tileset[self[x-offX][y-offY]]
+            if tile then
+              tile.texture:drawTexture(x, y)
+            end
+          end
         end
       end
     end,
@@ -220,12 +229,21 @@ engine.elements.new = {
         end
         if not self[x] then self[x] = {} end
         self[x][y] = tileToSet
-        self:updateDimensions()
+        --self:updateDimensions()
       end,
       rectangle = function(self, x, y, w, h, tile)
         for x = x, x+w-1 do
           for y = y, y+h-1 do
             self.set.tile(self, x, y, tile)
+          end
+        end
+      end,
+      sphere = function(self, sx, sy, r, tile)
+        for x = sx-r*2, sx+r*2 do
+          for y = sy-r*2, sy+r*2 do
+            if engine.math.getDistance(x, y, sx, sy) <= r then
+              self.set.tile(self, x, y, tile)
+            end
           end
         end
       end
@@ -266,6 +284,23 @@ engine.elements.new = {
       end
       if self.tilemap:getTile(self.x, self.y+self.h).solid then
         self.jumpedHeight = 0
+      end
+    end
+  }),
+  inventory = engine.elements.newElement({
+    INIT = function(self)
+      for slotNum = 1, self.slotNum do
+        self[slotNum] = {}
+      end
+    end,
+    UPDATE = function(self, event, var1, var2, var3)
+    end,
+    drawSlot = function(self, slotNum)
+      local slotX, slotY = self.x+slotNum-1*4, self.y
+    end,
+    DRAW = function(self)
+      for slotNum = 1, #self do
+        self:drawSlot(slotNum)
       end
     end
   }),
@@ -333,13 +368,13 @@ engine.run = function(elements, dt)
     buffer.setVisible(true)
 
     local event, var1, var2, var3 = os.pullEventRaw()
+    if engine.eventHandler[event] then
+      engine.eventHandler[event](var1, var2, var3)
+    end
     if event == "timer" then
       engine.elements.physicsUpdate(elements)
       os.cancelTimer(physicsUpdateTimer)
       physicsUpdateTimer = os.startTimer(0.1)
-    end
-    if engine.eventHandler[event] then
-      engine.eventHandler[event](var1, var2, var3)
     end
     if event == "char" and var1 == "q" then gameRunning = false end
     engine.elements.update(elements, event, var1, var2, var3)
