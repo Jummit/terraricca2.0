@@ -167,8 +167,7 @@ elements.player = engine.elements.new.kinematic({
   end
 })
 elements.inventory = engine.elements.new.inventory({
-  x = 3, y = 3, slotNum = 5
+  x = 3, y = 3, slotNum = 5, priority = true, tilemap = elements.tilemap
 })
-
 
 engine.run(elements, 0.001)

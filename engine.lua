@@ -7,22 +7,22 @@ engine.ui = {
     return x>=box.x and y>=box.y and x<box.x+box.w and y<box.y+box.h
   end,
   codes = {
-    red = "e",
-    orange = 1,
-    yellow = 4,
-    black = "f",
-    gray = 7,
-    lightGray = 8,
-    white = 1,
-    blue = "b",
-    cyan = 9,
-    lightBlue = 3,
-    green = "d",
-    lime = 5,
-    brown = "c",
-    magenta = 2,
-    pink = 6,
-    purple = "a",
+    [colors.red] = "e",
+    [colors.orange] = 1,
+    [colors.yellow] = 4,
+    [colors.black] = "f",
+    [colors.gray] = 7,
+    [colors.lightGray] = 8,
+    [colors.white] = 1,
+    [colors.blue] = "b",
+    [colors.cyan] = 9,
+    [colors.lightBlue] = 3,
+    [colors.green] = "d",
+    [colors.lime] = 5,
+    [colors.brown] = "c",
+    [colors.magenta] = 2,
+    [colors.pink] = 6,
+    [colors.purple] = "a",
   },
   getColorOfPaintCode = function(code)
     for color, paintCode in pairs(engine.ui.paintColorCodes) do
@@ -76,7 +76,6 @@ engine.math = {
     return math.floor(-pos+w/2)
   end,
   getDistance = function(x1, y1, x2, y2)
-    --error(x1.." "..x2.." "..y1.." "..y2.." "..math.sqrt((x1-x2)^2+(y2-y2)^2))
     return math.sqrt((x1-x2)^2+(y1-y2)^2)
   end
 }
@@ -89,7 +88,13 @@ engine.elements.methods = {
     for x = self.x, self.x+self.w-1 do
       for y = self.y, self.y+self.h-1 do
         local tile = tilemap:getTile(x+xmove, y+ymove)
-        if (not tile) or tile.solid then canMove = false end
+        if (not tile) or tile.solid then
+          if y == self.y+self.h-1 then
+            ymove = ymove-1
+          else
+            canMove = false
+          end
+        end
       end
     end
     if canMove then
@@ -194,7 +199,8 @@ engine.elements.new = {
     end,
     offX = 0,
     offY = 0,
-    DRAW = function(self, offX, offY)
+    DRAW = function(self)
+      offX, offY = self.offX, self.offY
       for x = 1, engine.w do
         for y = 1, engine.h do
           if self[x-offX] then
@@ -302,12 +308,23 @@ engine.elements.new.inventory = engine.elements.newElement({
     right = engine.elements.new.texture({{"\149", "0", "a"}}),
     down = engine.elements.new.texture({{"\131", "0", "a"}})
   },
+  charPos = {
+    up = {0, -1},
+    down = {0, 1},
+    left = {-1, 0},
+    right = {1, 0},
+  },
   drawSlot = function(self, slotNum)
     local slotX, slotY = self.x+(slotNum-1)*3, self.y
-    self.textures.up:drawTexture(slotX, slotY-1)
-    self.textures.down:drawTexture(slotX, slotY+1)
-    self.textures.left:drawTexture(slotX-1, slotY)
-    self.textures.right:drawTexture(slotX+1, slotY)
+    for direction, pos in pairs(self.charPos) do
+      local charX, charY = slotX+pos[1], slotY+pos[2]
+      local texture = self.textures[direction]
+      local tileX, tileY = charX-self.tilemap.offX, charY-self.tilemap.offY
+      local colorOfTile = self.tilemap:getTile(tileX, tileY).texture[1][3]
+      texture:replaceColor("a", colorOfTile)
+      texture:drawTexture(charX, charY)
+      texture:replaceColor(colorOfTile, "a")
+    end
   end,
   DRAW = function(self)
     for slotNum = 1, #self do
