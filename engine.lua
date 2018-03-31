@@ -283,8 +283,7 @@ engine.elements.new = {
     PHYSICSUPDATE = function(self)
       for key, move in pairs(self.moves) do
         if engine.keyboard[key] then
-          engine.log("moved")
-          return self:moveAndCollide(move[1], move[2], self.tilemap)
+          self:moveAndCollide(move[1], move[2], self.tilemap)
         end
       end
       if self.jumping and self.jumpedHeight<self.maxJumpHeight then
@@ -348,11 +347,10 @@ engine.elements.runFunction = function(elements, func, ...)
       else
         prioritys[priority] = element
       end
-    end
-    if element.element then
-      if element[func] then
-        element[func](element, ...)
-      end
+    elseif element.element then
+        if element[func] then
+          element[func](element, ...)
+        end
     else
       engine.elements.runFunction(element, func, ...)
     end
@@ -393,7 +391,6 @@ engine.run = function(elements, dt)
   local gameRunning = true
   local physicsUpdateTimer = os.startTimer(0.1)
   while gameRunning do
-    engine.log("draw")
     buffer.setVisible(false)
     term.setBackgroundColor(colors.black)
     term.clear()
@@ -408,11 +405,9 @@ engine.run = function(elements, dt)
       engine.elements.physicsUpdate(elements)
       os.cancelTimer(physicsUpdateTimer)
       physicsUpdateTimer = os.startTimer(0.1)
-      engine.log("physics update\n")
     elseif event == "char" and var1 == "q" then
       gameRunning = false
     end
-    engine.log("update")
     engine.elements.update(elements, event, var1, var2, var3)
   end
   engine.logfile.close()
