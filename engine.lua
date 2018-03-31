@@ -88,14 +88,14 @@ engine.elements = {}
 engine.elements.methods = {}
 engine.elements.methods = {
   element = true,
-  moveAndCollide = function(self, xmove, ymove, tilemap)
+  moveAndCollide = function(self, xmove, ymove, tilemap, tilesMovedUp)
     local canMove = true
     for x = self.x, self.x+self.w-1 do
       for y = self.y, self.y+self.h-1 do
         local tile = tilemap:getTile(x+xmove, y+ymove)
         if (not tile) or tile.solid then
-          if y == self.y+self.h-1 then
-            return engine.elements.methods.moveAndCollide(self, xmove, ymove-1, tilemap)
+          if y == self.y+self.h-1 and not tilesMovedUp then
+            return engine.elements.methods.moveAndCollide(self, xmove, ymove-1, tilemap, 1)
           else
             canMove = false
           end
@@ -380,7 +380,9 @@ engine.elements.draw = function(elements)
   engine.elements.runFunction(elements, "draw")
 end
 
-engine.run = function(elements, dt)
+engine.run = function(elements, dt, physicsUpdateTime)
+  local physicsUpdateTime = physicsUpdateTime or 0.06
+  local dt = dt or 0.01
   engine.elements.init(elements)
 
   local dt = dt or 0.01
@@ -389,7 +391,7 @@ engine.run = function(elements, dt)
 
   local succ, mess = pcall(function()
   local gameRunning = true
-  local physicsUpdateTimer = os.startTimer(0.1)
+  local physicsUpdateTimer = os.startTimer(physicsUpdateTime)
   while gameRunning do
     buffer.setVisible(false)
     term.setBackgroundColor(colors.black)
@@ -404,7 +406,7 @@ engine.run = function(elements, dt)
     if event == "timer" then
       engine.elements.physicsUpdate(elements)
       os.cancelTimer(physicsUpdateTimer)
-      physicsUpdateTimer = os.startTimer(0.1)
+      physicsUpdateTimer = os.startTimer(physicsUpdateTime)
     elseif event == "char" and var1 == "q" then
       gameRunning = false
     end
