@@ -81,6 +81,7 @@ engine.math = {
 }
 
 engine.elements = {}
+engine.elements.methods = {}
 engine.elements.methods = {
   element = true,
   moveAndCollide = function(self, xmove, ymove, tilemap)
@@ -90,7 +91,7 @@ engine.elements.methods = {
         local tile = tilemap:getTile(x+xmove, y+ymove)
         if (not tile) or tile.solid then
           if y == self.y+self.h-1 then
-            ymove = ymove-1
+            return engine.elements.methods.moveAndCollide(self, xmove, ymove-1, tilemap)
           else
             canMove = false
           end
