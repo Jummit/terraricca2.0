@@ -1,5 +1,9 @@
 local engine = {}
 engine.w, engine.h = term.getSize()
+engine.logfile = fs.open("terraricca.log", "w")
+engine.log = function(log)
+  engine.logfile.write(log.."\n")
+end
 
 engine.ui = {}
 engine.ui = {
@@ -279,10 +283,10 @@ engine.elements.new = {
     PHYSICSUPDATE = function(self)
       for key, move in pairs(self.moves) do
         if engine.keyboard[key] then
-          self:moveAndCollide(move[1], move[2], self.tilemap)
+          engine.log("moved")
+          return self:moveAndCollide(move[1], move[2], self.tilemap)
         end
       end
-
       if self.jumping and self.jumpedHeight<self.maxJumpHeight then
         self:moveAndCollide(0, -1, self.tilemap)
         self.jumpedHeight = self.jumpedHeight + 1
@@ -389,6 +393,7 @@ engine.run = function(elements, dt)
   local gameRunning = true
   local physicsUpdateTimer = os.startTimer(0.1)
   while gameRunning do
+    engine.log("draw")
     buffer.setVisible(false)
     term.setBackgroundColor(colors.black)
     term.clear()
@@ -403,10 +408,14 @@ engine.run = function(elements, dt)
       engine.elements.physicsUpdate(elements)
       os.cancelTimer(physicsUpdateTimer)
       physicsUpdateTimer = os.startTimer(0.1)
+      engine.log("physics update\n")
+    elseif event == "char" and var1 == "q" then
+      gameRunning = false
     end
-    if event == "char" and var1 == "q" then gameRunning = false end
+    engine.log("update")
     engine.elements.update(elements, event, var1, var2, var3)
   end
+  engine.logfile.close()
   end)
 
   buffer.setVisible(true)

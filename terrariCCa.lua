@@ -6,7 +6,7 @@ elements.tilemap = engine.elements.new.tilemap({
   tileset = engine.elements.new.tileset({
     air = {texture = engine.elements.new.texture({{" ", "3", "3"}})},
     grass = {texture = engine.elements.new.texture({{" ", "7", "d"}}),solid = true, behind = "dirt"},
-    plant = {texture = engine.elements.new.texture({{"p", "d", "3"}})},
+    plant = {texture = engine.elements.new.texture({{"p", "d", "3"}}), behind = "air"},
     dirt = {texture = engine.elements.new.texture({{" ", "7", "c"}}), solid = true, behind = "wall"},
     stone = {texture = engine.elements.new.texture({{" ", "f", "8"}}), solid = true, behind = "wall"},
     leaves = {texture = engine.elements.new.texture({{"b", "5", "d"}}), behind = "air"},
