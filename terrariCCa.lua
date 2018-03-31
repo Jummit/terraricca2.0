@@ -1,6 +1,10 @@
 local engine = require "engine"
 
 local elements = {}
+elements.leaveParticles = engine.elements.new.particles({
+  maxStates = 5,
+  priority = true
+})
 elements.tilemap = engine.elements.new.tilemap({
   offset = {0, 0},
   tileset = engine.elements.new.tileset({
@@ -9,8 +13,22 @@ elements.tilemap = engine.elements.new.tilemap({
     plant = {texture = engine.elements.new.texture({{"p", "d", "3"}}), behind = "air"},
     dirt = {texture = engine.elements.new.texture({{" ", "7", "c"}}), solid = true, behind = "wall"},
     stone = {texture = engine.elements.new.texture({{" ", "f", "8"}}), solid = true, behind = "wall"},
-    leaves = {texture = engine.elements.new.texture({{"b", "5", "d"}}), behind = "air"},
-    log = {texture = engine.elements.new.texture({{"B", "7", "c"}}), behind = "air"},
+    leaves = {texture = engine.elements.new.texture({{"b", "5", "d"}})},
+    log = {texture = engine.elements.new.texture({{"B", "7", "c"}}), behind = "air", onBreak = function(tilemap, tx, ty)
+      for x = 1, 3 do
+        for y = 1, 2 do
+          local tileX, tileY = tx+x-2, ty+y-2
+          local tile = tilemap[tileX][tileY]
+          if tile == "leaves" or tile == "log" then
+            if math.random(1, 10) == 1 then
+              elements.leaveParticles:spawn(tileX, tileY)
+            end
+            tilemap.set.tile(tilemap, tileX, tileY, "air")
+            tilemap.tileset.log.onBreak(tilemap, tileX, tileY)
+          end
+        end
+      end
+    end},
   }),
   createWall = function(self, tileName)
     local tile = self.tileset[tileName]
@@ -154,6 +172,9 @@ elements.player = engine.elements.new.kinematic({
           self.tilemap:createWall(tileName)
         end
         self.tilemap.set.tile(self.tilemap, tileX, tileY, tileToSet)
+        if tileToSetOn.onBreak then
+          tileToSetOn.onBreak(self.tilemap, tileX, tileY)
+        end
       end
     end
   end,
@@ -161,6 +182,7 @@ elements.player = engine.elements.new.kinematic({
     local offX, offY = engine.math.getOffset(engine.w, self.x), engine.math.getOffset(engine.h, self.y)
     self.offX, self.offY = offX, offY
     self.tilemap.offX, self.tilemap.offY = offX, offY
+    elements.leaveParticles.offX, elements.leaveParticles.offY = offX, offY
     if engine.mouse.left then
       self:breakBlock(engine.mouse.x-offX, engine.mouse.y-offY)
     end
@@ -170,4 +192,4 @@ elements.inventory = engine.elements.new.inventory({
   x = 3, y = 3, slotNum = 5, priority = true, tilemap = elements.tilemap
 })
 
-engine.run(elements, 0.001)
+engine.run(elements)

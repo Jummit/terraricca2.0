@@ -296,7 +296,34 @@ engine.elements.new = {
         self.jumpedHeight = 0
       end
     end
-  })
+  }),
+  particles = engine.elements.newElement({
+    offX = 0, offY = 0,
+    INIT = function(self)
+    end,
+    maxStates = 3,
+    UPDATE = function(self)
+      for particleNum = 1, #self do
+        local particle = self[particleNum]
+        self:updateParticle(particle)
+      end
+    end,
+    updateParticle = function(self, particle)
+      particle.y = particle.y + 1
+    end,
+    drawParticle = function(self, particle)
+      paintutils.drawPixel(particle.x+self.offX, particle.y+self.offY, colors.green)
+    end,
+    spawn = function(self, x, y)
+      table.insert(self, {x = x, y = y})
+    end,
+    DRAW = function(self)
+      for particleNum = 1, #self do
+        local particle = self[particleNum]
+        self:drawParticle(particle)
+      end
+    end
+  }),
 }
 engine.elements.new.inventory = engine.elements.newElement({
   INIT = function(self)
