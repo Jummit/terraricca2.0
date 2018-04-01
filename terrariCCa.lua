@@ -3,6 +3,15 @@ local engine = require "engine"
 local elements = {}
 elements.leaveParticles = engine.elements.new.particles({
   maxStates = 5,
+  moves = {
+    {2, 2},
+    {1, -1},
+    {1, 0},
+    {-1, 0},
+    {-2, 2},
+    {-1, 0},
+    {-1, -1},
+  },
   priority = true
 })
 elements.tilemap = engine.elements.new.tilemap({
@@ -192,4 +201,4 @@ elements.inventory = engine.elements.new.inventory({
   x = 3, y = 3, slotNum = 5, priority = true, tilemap = elements.tilemap
 })
 
-engine.run(elements)
+engine.run(elements, 0.01, 0.1)

@@ -299,28 +299,49 @@ engine.elements.new = {
   }),
   particles = engine.elements.newElement({
     offX = 0, offY = 0,
+    timeOut = 10,
     INIT = function(self)
     end,
-    maxStates = 3,
-    UPDATE = function(self)
+    PHYSICSUPDATE = function(self)
+      local toDeleteParticles = {}
       for particleNum = 1, #self do
         local particle = self[particleNum]
-        self:updateParticle(particle)
+        if particle then
+          if self:updateParticle(particle) == "delete" then
+            table.insert(toDeleteParticles, particleNum)
+          end
+        end
+      end
+      for toDeleteParticleNum = 1, #toDeleteParticles do
+        self[toDeleteParticleNum] = nil
       end
     end,
     updateParticle = function(self, particle)
-      particle.y = particle.y + 1
+      particle.state = particle.state + 1
+      local move = self.moves[particle.state]
+      if not move then
+        particle.state = 1
+        move = self.moves[particle.state]
+      end
+      particle.timeOut = particle.timeOut - 1
+      if particle.timeOut == 0 then
+        return "delete"
+      end
+      particle.y = particle.y + move[2]
+      particle.x = particle.x + move[1]
     end,
     drawParticle = function(self, particle)
       paintutils.drawPixel(particle.x+self.offX, particle.y+self.offY, colors.green)
     end,
     spawn = function(self, x, y)
-      table.insert(self, {x = x, y = y})
+      table.insert(self, {x = x, y = y, state = math.random(#self.moves), timeOut = self.timeOut})
     end,
     DRAW = function(self)
       for particleNum = 1, #self do
         local particle = self[particleNum]
-        self:drawParticle(particle)
+        if particle then
+          self:drawParticle(particle)
+        end
       end
     end
   }),
