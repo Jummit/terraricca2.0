@@ -168,7 +168,7 @@ elements.player = engine.elements.new.kinematic({
   }),
   x = math.floor(engine.w*3/2), y = 3,
   maxJumpHeight = 6,
-  breakBlock = function(self, tileX, tileY)
+  breakTile = function(self, tileX, tileY)
     local tileToSetOn = self.tilemap:getTile(tileX, tileY)
     if tileToSetOn then
       local tileToSet = tileToSetOn.behind
@@ -189,13 +189,28 @@ elements.player = engine.elements.new.kinematic({
       end
     end
   end,
+  placeTile = function(self, tileX, tileY)
+    local tileToPlace = elements.inventory.heldItem.item
+    local tileToPlaceOn = self.tilemap[tileX][tileY]
+    if tileToPlaceOn then
+      self.tilemap.set.tile(self.tilemap, tileX, tileY, tileToPlace)
+      elements.inventory.heldItem.amount = elements.inventory.heldItem.amount-1
+      if elements.inventory.heldItem.amount == 0 then
+        elements.inventory.heldItem = false
+      end
+    end
+  end,
   update = function(self)
     local offX, offY = engine.math.getOffset(engine.w, self.x), engine.math.getOffset(engine.h, self.y)
     self.offX, self.offY = offX, offY
     self.tilemap.offX, self.tilemap.offY = offX, offY
     elements.leaveParticles.offX, elements.leaveParticles.offY = offX, offY
+    local clickedX, clickedY = engine.mouse.x-offX, engine.mouse.y-offY
     if engine.mouse.left then
-      self:breakBlock(engine.mouse.x-offX, engine.mouse.y-offY)
+      self:breakTile(clickedX, clickedY)
+    end
+    if engine.mouse.right and elements.inventory.heldItem then
+      self:placeTile(clickedX, clickedY)
     end
   end
 })
