@@ -357,7 +357,27 @@ engine.elements.new.inventory = engine.elements.newElement({
       self[slotNum] = {}
     end
   end,
-  UPDATE = function(self, event, var1, var2, var3)
+  UPDATE = function(self)
+  end,
+  mouse_click = function(self, button, mx, my)
+    for slotNum = 1, #self do
+      local slot = self[slotNum]
+      local heldItem = self.heldItem
+      local slotX, slotY = self:getSlotPosition(slotNum)
+      if mx == slotX and my == slotY then
+        if not slot.item and heldItem then
+          self[slotNum] = heldItem
+          self.heldItem = false
+        elseif slot.item and not heldItem then
+          self.heldItem = slot
+          self[slotNum] = {}
+        elseif slot.item and heldItem then
+          self[slotNum] = self.heldItem
+          self.heldItem = slot
+        end
+        return
+      end
+    end
   end,
   textures = {
     up = engine.elements.new.texture({{"\143", "a", "0"}}),
@@ -391,11 +411,15 @@ engine.elements.new.inventory = engine.elements.newElement({
     end
     if not gaveItem then return self:give(item, amount, true) end
   end,
+  heldItem = false,
   take = function(self, item)
 
   end,
+  getSlotPosition = function(self, slotNum)
+    return self.x+(slotNum-1)*3, self.y
+  end,
   drawSlot = function(self, slotNum)
-    local slotX, slotY = self.x+(slotNum-1)*3, self.y
+    local slotX, slotY = self:getSlotPosition(slotNum)
     for direction, pos in pairs(self.charPos) do
       local charX, charY = slotX+pos[1], slotY+pos[2]
       local texture = self.textures[direction]
