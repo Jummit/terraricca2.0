@@ -192,7 +192,7 @@ elements.player = engine.elements.new.kinematic({
   placeTile = function(self, tileX, tileY)
     local tileToPlace = elements.inventory.heldItem.item
     local tileToPlaceOn = self.tilemap[tileX][tileY]
-    if tileToPlaceOn then
+    if tileToPlaceOn and tileToPlaceOn~=tileToPlace then
       self.tilemap.set.tile(self.tilemap, tileX, tileY, tileToPlace)
       elements.inventory.heldItem.amount = elements.inventory.heldItem.amount-1
       if elements.inventory.heldItem.amount == 0 then
