@@ -184,6 +184,8 @@ elements.player = engine.elements.new.kinematic({
         if tileToSetOn.onBreak then
           tileToSetOn.onBreak(self.tilemap, tileX, tileY)
         end
+        elements.inventory:createItemFromTile(tileName)
+        elements.inventory:give(tileName, 1)
       end
     end
   end,
@@ -198,7 +200,14 @@ elements.player = engine.elements.new.kinematic({
   end
 })
 elements.inventory = engine.elements.new.inventory({
-  x = 3, y = 3, slotNum = 5, priority = true, tilemap = elements.tilemap
+  x = 3, y = 3, slotNum = 5, priority = true, tilemap = elements.tilemap,
+  createItemFromTile = function(self, tile)
+    if not self.items[tile] then
+      self.items[tile] = engine.elements.new.item({
+        texture = elements.tilemap.tileset[tile].texture
+      })
+    end
+  end
 })
 
 engine.run(elements, 0.01, 0.1)

@@ -345,6 +345,11 @@ engine.elements.new = {
       end
     end
   }),
+  item = engine.elements.newElement({
+    drawItem = function(self, x, y)
+      self.texture:drawTexture(x, y)
+    end
+  })
 }
 engine.elements.new.inventory = engine.elements.newElement({
   INIT = function(self)
@@ -366,6 +371,29 @@ engine.elements.new.inventory = engine.elements.newElement({
     left = {-1, 0},
     right = {1, 0},
   },
+  items = {},
+  give = function(self, item, amount, newSlot)
+    local gaveItem = false
+    for slotNum = 1, #self do
+      local slot = self[slotNum]
+      if not gaveItem then
+        if newSlot and not slot.item then
+          gaveItem = true
+          self[slotNum] = {
+            item = item,
+            amount = amount
+          }
+        elseif slot.item == item then
+          gaveItem = true
+          slot.amount = slot.amount + 1
+        end
+      end
+    end
+    if not gaveItem then return self:give(item, amount, true) end
+  end,
+  take = function(self, item)
+
+  end,
   drawSlot = function(self, slotNum)
     local slotX, slotY = self.x+(slotNum-1)*3, self.y
     for direction, pos in pairs(self.charPos) do
@@ -376,6 +404,14 @@ engine.elements.new.inventory = engine.elements.newElement({
       texture:replaceColor("a", colorOfTile)
       texture:drawTexture(charX, charY)
       texture:replaceColor(colorOfTile, "a")
+    end
+    local slot = self[slotNum]
+    if slot.item then
+      self.items[slot.item]:drawItem(slotX, slotY)
+      term.setCursorPos(slotX-1, slotY+1)
+      term.setBackgroundColor(colors.white)
+      term.setTextColor(colors.gray)
+      term.write(slot.amount)
     end
   end,
   DRAW = function(self)
